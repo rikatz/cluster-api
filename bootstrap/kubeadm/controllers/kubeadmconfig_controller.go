@@ -351,19 +351,25 @@ func (r *KubeadmConfigReconciler) handleClusterNotInitialized(ctx context.Contex
 		verbosityFlag = fmt.Sprintf("--v %s", strconv.Itoa(int(*scope.Config.Spec.Verbosity)))
 	}
 
-	cloudInitData, err := cloudinit.NewInitControlPlane(&cloudinit.ControlPlaneInput{
-		BaseUserData: cloudinit.BaseUserData{
-			AdditionalFiles:     scope.Config.Spec.Files,
-			NTP:                 scope.Config.Spec.NTP,
-			PreKubeadmCommands:  scope.Config.Spec.PreKubeadmCommands,
-			PostKubeadmCommands: scope.Config.Spec.PostKubeadmCommands,
-			Users:               scope.Config.Spec.Users,
-			KubeadmVerbosity:    verbosityFlag,
-		},
-		InitConfiguration:    initdata,
-		ClusterConfiguration: clusterdata,
-		Certificates:         certificates,
-	})
+	var cloudInitData []byte
+	if scope.Config.Spec.Format == "ignition" {
+		//cloudinitData, err := ignition.
+	} else {
+		cloudInitData, err = cloudinit.NewInitControlPlane(&cloudinit.ControlPlaneInput{
+			BaseUserData: cloudinit.BaseUserData{
+				AdditionalFiles:     scope.Config.Spec.Files,
+				NTP:                 scope.Config.Spec.NTP,
+				PreKubeadmCommands:  scope.Config.Spec.PreKubeadmCommands,
+				PostKubeadmCommands: scope.Config.Spec.PostKubeadmCommands,
+				Users:               scope.Config.Spec.Users,
+				KubeadmVerbosity:    verbosityFlag,
+			},
+			InitConfiguration:    initdata,
+			ClusterConfiguration: clusterdata,
+			Certificates:         certificates,
+		})
+	}
+
 	if err != nil {
 		scope.Error(err, "failed to generate cloud init for bootstrap control plane")
 		return ctrl.Result{}, err
@@ -373,7 +379,6 @@ func (r *KubeadmConfigReconciler) handleClusterNotInitialized(ctx context.Contex
 		scope.Error(err, "failed to store bootstrap data")
 		return ctrl.Result{}, err
 	}
-
 	return ctrl.Result{}, nil
 }
 
